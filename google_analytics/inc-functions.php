@@ -91,17 +91,17 @@
 									break;
 								case 'callback':
 									// by default, pass configuration value as parameter
-									if(!array_key_exists('ga_callback_parameter', $p_confitem_ga) ^ $p_confitem_ga['ga_callback_parameter'] == NULL)
+									if(!array_key_exists('ga_callback_parameter', $p_confitem_ga) || $p_confitem_ga['ga_callback_parameter'] == NULL)
 										$t_normalized_param = call_user_func_array( 'GAConfig::'.$p_confitem_ga['ga_callback_name'] , array(getOption($p_confitem['property_name']) ));
 									else
-										$t_normalized_param = call_user_func_array( $p_confitem_ga['ga_callback_name'] , $p_confitem_ga['ga_callback_parameter'] );
+										$t_normalized_param = call_user_func_array( 'GAConfig::'.$p_confitem_ga['ga_callback_name'] , $p_confitem_ga['ga_callback_parameter'] );
 									break;
 								default:
 									$t_normalized_param = "'".getOption($p_confitem['property_name'])."'";
 									break;
 							}
 							// Exception rule: if ga_value_type is set to 'none' or 'callback', we only append the output if a content is filled
-							if($p_confitem_ga['ga_category'] == 'other')
+							if($p_confitem_ga['ga_category'] == 'other') 
 								$t_param .= "    ga('" . $p_confitem_ga['ga_parameter']."', " . $t_normalized_param . ")\n";
 							elseif($p_confitem_ga['ga_value_type'] == 'none'
 								&& (strlen(getOption($p_confitem['property_name'])) > 0 

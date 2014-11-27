@@ -10,10 +10,10 @@
  */
 
 $plugin_is_filter = 5 | THEME_PLUGIN;
-$plugin_description = gettext("Support for providing Google Analytics tracking");
-$plugin_author = 'Arnaud Hocevar (original plugin from Jeff Smith)';
+$plugin_description = gettext("Support for providing Google Analytics tracking to ZenPhoto20");
+$plugin_author = 'Arnaud Hocevar';
 $plugin_version = '4.0';
-$plugin_URL = "http://github.com/ArnaudHocevar/ZPGoogleAnalytics";
+$plugin_URL = "http://github.com/ArnaudHocevar/ZPGoogleAnalytics20";
 $option_interface = "GoogleAnalytics";
 
 // Include all the dependencies
@@ -29,7 +29,7 @@ zp_register_filter(getOption(GAConfig::getConfItem('TrackImageViewsPosition','pr
 class GoogleAnalytics {
 
 	// Constructor: set all the option defaults
-	public function GoogleAnalytics() {
+	public function __construct() {
 		//$conflist = GAConfig::getConf();
 		foreach (GAConfig::getConf() as $sub) {
 			setOptionDefault($sub['property_name'],$sub['default']);
@@ -56,37 +56,41 @@ class GoogleAnalytics {
 	}
 
 	function handleOption($option, $currentValue) {}
-
+	
 	public static function GAinitialize() {
 		// Only enable analytics if a valid UA identifier is available
 		if(GAToolbox::validateAnalyticsId(getOption(GAConfig::getConfItem('AnalyticsId','property_name')))
-				&& ((zp_loggedin() && getOption(GAConfig::getConfItem('AdminTrackingEnabled','property_name'))) 
-						|| !zp_loggedin()) ) {
+				&& ((zp_loggedin(ADMIN_RIGHTS) && getOption(GAConfig::getConfItem('AdminTrackingEnabled','property_name'))) 
+						|| !zp_loggedin(ADMIN_RIGHTS)) ) {
 			// Analytics JS header
 			echo "<script type=\"text/javascript\">
     (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
     (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
     m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
     })(window,document,'script','//www.google-analytics.com/analytics.js','ga');\n";
-
-			// Analytics set up script
-			self::printGAOptions();
-
+	
+			echo GAToolbox::buildAdditionalParams('require');
+			echo GAToolbox::buildAdditionalParams('other');
+			echo GAToolbox::buildAdditionalParams('set');
+			if(getOption(GAConfig::getConfItem('TrackPageViews','property_name')) == 1) {
+				echo "    ga('send', 'pageview');\n";
+				}
 			echo "</script>\n";
 		}
 	}
+	
 	public static function GAColorboxHook() {
 		// Only enable analytics if a valid UA identifier is available AND we want to track image view
 		if(GAToolbox::validateAnalyticsId(getOption(GAConfig::getConfItem('AnalyticsId','property_name')))
-				&& ((zp_loggedin() && getOption(GAConfig::getConfItem('AdminTrackingEnabled','property_name'))) 
-						|| !zp_loggedin()) 
+				&& ((zp_loggedin(ADMIN_RIGHTS) && getOption(GAConfig::getConfItem('AdminTrackingEnabled','property_name'))) 
+						|| !zp_loggedin(ADMIN_RIGHTS))
 				&& getOption(GAConfig::getConfItem('TrackImageViews','property_name')) == 1) {
 			echo "<script type=\"text/javascript\">
 	$(document).ready(function () {
 		$(document).bind('cbox_complete', function(){
 			var href = this.href;
 			if (href) {
-				ga('send', 'pageview', href);
+				ga('send', 'pageview', href]);
 			}
 		});
 	});
@@ -94,43 +98,5 @@ class GoogleAnalytics {
 		}
 	}
 
-	private static function printGAOptions() {
-		$analyticUserId = getOption(GAConfig::getConfItem('AnalyticsId','property_name'));
-		$domainListParam = getOption(GAConfig::getConfItem('DomainNameList','property_name'));
-		if (!empty($analyticUserId) && 
-			((zp_loggedin() && getOption(GAConfig::getConfItem('AdminTrackingEnabled','property_name'))) 
-				|| !zp_loggedin())) {
-			/* Initialisation of tracking code */
-			echo "    ga('create', '" . $analyticUserId . "', {" . GAToolbox::buildCreateParams() ."});\n";
-
-				/* Additional options */
-			if(getOption(GAConfig::getConfItem('TrackDemographics','property_name')) == 1) {
-				echo "    ga('require', 'displayfeatures');\n";
-			}
-			if(getOption(GAConfig::getConfItem('UseEnhancedLinks','property_name')) == 1) {
-				echo "    ga('require', 'linkid', 'linkid.js');\n";
-				}
-			if(!empty($domainListParam)) {
-				echo "    ga('require', 'linker');\n";
-				$tok = strtok($domainListParam, " ,");
-				$domainList = "";
-				while ($tok !== false) {
-					if(!empty($tok))
-						$domainList = $domainList . "'" . $tok . "', ";
-						$tok = strtok(" ,");
-					}
-				echo "    ga('linker:autoLink', [" . $domainList . "], false, true);\n";
-				}
-			if(getOption(GAConfig::getConfItem('IPAnonymizeEnabled','property_name')) == 1) {
-				echo "    ga('set', 'anonymizeIp', true);\n";
-				}
-			if(getOption(GAConfig::getConfItem('ForceSSL','property_name')) == 1) {
-				echo "    ga('set', 'forceSSL', true);\n";
-			}
-			if(getOption(GAConfig::getConfItem('TrackPageViews','property_name')) == 1) {
-				echo "    ga('send', 'pageview');\n";
-				}
-		}
-	}
 }
 ?>
